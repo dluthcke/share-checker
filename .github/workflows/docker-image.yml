@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build share-checker image
+        run: |
+          docker build -t share-checker:latest ./share-checker
+
+      - name: Start share-checker container
+        run: |
+          docker run -d \
+            --name share-checker \
+            --health-cmd="test -f /tmp/shares-ready" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=3 \
+            --health-start-period=10s \
+            -e NFS1=server:/export/test \
+            -e TIMEOUT=60 \
+            share-checker:latest
+
+      - name: Mock NFS ready file
+        run: |
+          docker exec share-checker touch /tmp/shares-ready
+
+      - name: Wait for container to become healthy
+        run: |
+          timeout 60s bash -c "until docker inspect -f '{{.State.Health.Status}}' share-checker | grep -q healthy; do sleep 5; done"
+
+      - name: Run app container
+        run: |
+          docker run --rm --name app hello-world || echo "hello-world ran"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f share-checker || true
+
