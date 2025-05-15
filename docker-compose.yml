@@ -1,0 +1,31 @@
+services:
+  share-checker:
+    image: share-checker:latest
+    restart: always
+    depends_on:
+      - nfs-server
+    environment:
+      - NFS1=server:/mnt/share
+      - TIMEOUT=60
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/shares-ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+  app:
+    image: hello-world
+    restart: always
+    depends_on:
+      nfs-checker:
+        condition: service_healthy
+    volumes:
+      - /mnt/nfs1:/mnt/nfs1:ro
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
