@@ -10,3 +10,5 @@ RUN chmod +x /entrypoint.sh
 # Set entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["sleep", "infinity"]
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=10s CMD test -f /tmp/shares-ready
