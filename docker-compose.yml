@@ -3,10 +3,12 @@ services:
     image: share-checker:latest
     restart: always
     depends_on:
-      - nfs-server
+      - nfs-server # Optional: Only needed if the nfs server is supposed to be running locally
     environment:
-      - NFS1=server:/mnt/share
-      - TIMEOUT=60
+      - NFS1=server:/mnt/share # Replace with the correct server and share path
+        # Add more shares here in the format NFS[0-9]:/path/to/share
+      - TIMEOUT=60 # Optional: Default 60s
+      - DEBUG=true # Optional: Only for debugging
     healthcheck:
       test: ["CMD", "test", "-f", "/tmp/shares-ready"]
       interval: 10s
